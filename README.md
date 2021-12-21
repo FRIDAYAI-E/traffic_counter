@@ -106,3 +106,11 @@ df_3 = df_3.set_index("Date")
 ```
 
 However, in the case in order to have a year of data, it is not possible and hence, part of the features were removed. In this analysis, only temperature and total number of vehicles where used in the forecast.
+
+There are other methods available such as the following:
+
+- LSTM
+- XGBOOST
+- and many more
+
+But due to the limitation of data, the best approach would be to deploy VAR model. There are more considers to be made.
