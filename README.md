@@ -17,25 +17,73 @@ Please submit the Github link to your code by email, by December 21st , 6:00 PM 
 
 ## Solving Methodology
 
-The entire problem will be divided into 2 components for both scenarios:
+The entire problem statement will be divided into 2 components and it is applicable for both the scenarios:
 
-- (Computer Vision) Extracting information from the APIs (images)
-- (Analytics) Analytics conducted on the number of identified cars from the computer vision component
+To address the first issue where there is a need to identify the number of cars in the images generated from the road cameras, it will be classified as a computer vision problem.
 
-### Steps of delivery
+### Computer Vision
 
-#### Computer Vision
+(Computer Vision) - An automated video surveillance system that uses Deep learning models to identify the object of interest in real time. Hence, for the use case it will be used to extract the number of cars from the [Traffic Condition API](https://data.gov.sg/dataset/traffic-images) at a specific time and a specific location.
 
-The very first component what was build was the functions that enable us to select
+The first component is composed in the following steps:
+
+1. Change of datetime format
+2. Insert datetime into API get request
+3. Create image extraction module
+4. Deploy Neural Network models to process the images
+5. Save the output results from the model extraction
+
+However, in this current project, machine learning life cycle is not considered. Therefore, the model will need to be update accordingly when there are more data.
+
+The first time to manage is the date time format. There is a need to change the format where the API calls accept the datetime in the html request format.
+
+```
+variable = past_date_week.isoformat()
+print(urllib.parse.quote(variable))
+new_variable = urllib.parse.quote(variable)
+```
+
+Only after this step is done, users will be able to specify the date time there they would like to start the data collection process.
+
+Subsequently, it is the detection of the image information extration module. The identification of objects, the library [cvlib](https://www.cvlib.net) was adopted to identify the cars on the road. THe library uses the open source yoloV3 model for identification.
+
+```
+import cvlib as cv
+
+from cvlib.object_detection import draw_bbox
+
+bbox, label, conf = cv.detect_common_objects(img)
+output_image = draw_bbox(img, bbox, label, conf)
+car = label.count('car')
+bus = label.count('bus')
+truck = label.count('truck')
+motorcycle = label.count('motorcycle')
+```
+
+Each of these variables (cars, bus ...) will be stored in a panda table and be passed to the next components. However, in the purpose of this project, the number of vehicles will be the sum of all these variables and named "Total".
+
+There are some points of considerations that are not adressed in the project:
+
+Data collection perspective:
+
+- The weather conditions (heavy rain, very bright aftenroon)
+- Light conditions(between day time and night time)
+- Taking accuracy level of the model on singapore traffic use case
+- Other roads condition at the entrance of the specific location
+- Refresh rate of traffic camera
+
+The reason for highlighting these unaddress areas is that they are crutial component in the hyperparameter tuning, if another YOLOv3 model is to be applied or self-trained.
+
+Furthermore, the modulde in wrapped into a function that will be taking in the following parameters:
 
 ```
 #Changable Variables
 current_date = datetime.now()
-forecast_period = 3
-days = 7
-interval = 30
-latitude = 1.357098686
-longitude = 103.902042
+forecast_period = 3             #duration of forecast
+days = 7                        #duration of the dataset collection
+interval = 30                   #time between each image
+latitude = 1.357098686          #location of the camera
+longitude = 103.902042          #location of the camera
 
 df = data_generation(current_date, days, interval, latitude, longitude)
 #print(df)
@@ -43,31 +91,26 @@ df = data_generation(current_date, days, interval, latitude, longitude)
 
 Each of these variables enable users to determine the time of which they would like to forecast the number of vehicles at that particular moment. However, the approach taken here will not invole any storing of data generated, it will be pass on as a data frame onto the subsequent functions.
 
-As for the identification of objects, the library [cvlib](https://www.cvlib.net) was adopted to identify the cars on the road. THe library uses the open source yoloV3 model for identification. Throughout the process of identifying the number of vehicles, there are some points of considerations that are not made in the project:
-
-- the weather conditions [heavy rain]
-- light conditions[between day time and night time]
-- taking into account the accuracy level of the model within this use case is not tested.
-
 There are some area of improvement that can be made for the project would be improving on the stability of the API retrieval of the dataset as there are times where the module be running without and data coming in.
 
 The data that is currently being used in this project is a
 
 - 30 minutes interval image captured from the API server
-- 7 Days of data which gives a data share of (168,1) - for the univariate analysis
-- 7 Days of data which gives a data share of (168,2) - for the multivariate analysis
+- 7 Days of data which gives a data share of (336,1) - for the univariate analysis
+- 7 Days of data which gives a data share of (336,2) - for the multivariate analysis
 
-Overall, in the future there can be more data being use for this project if we are able to add more data sources such as
+Overall, in the future there can be more data being use for this project. There are also some areas of condersion that are not address in the process of collection components:
 
-- cross junction cameras image
-- holiday season of singapore when we collected 1 year of data
-- actual weather condition rather than weather temperature
+- error handling (in the event where APIs are down)
+- duration of data acquisition
+- in the event where network is down, how can the download be resumed without restarting
 
-This will give us a stronger dataset.
-
-#### Analytics
+### Analytics
 
 ##### Univerate Forecasting
+
+- holiday season of singapore when we collected 1 year of data
+- actual weather condition rather than weather temperature
 
 In the project, 3 models were conducted to forecast the number of vehicles on the road for the next 3 hours and the models used are:
 
